@@ -1,0 +1,33 @@
+@typeparam TItem
+@typeparam TParams where TParams : CursorParameters
+
+@if (_isEmpty && EmptyTemplate is not null && (HasActiveFilters is null || !HasActiveFilters(ParametersFactory())))
+{
+    @EmptyTemplate
+}
+else if (_isEmpty && FilteredEmptyTemplate is not null && HasActiveFilters is not null && HasActiveFilters(ParametersFactory()))
+{
+    @FilteredEmptyTemplate(ClearFiltersAsync)
+}
+else
+{
+    <Virtualize @key="_generation"
+                ItemsProvider="LoadItemsAsync"
+                ItemSize="ItemSize"
+                OverscanCount="OverscanCount"
+                Context="item">
+        <ItemContent>
+            @ItemTemplate(item)
+        </ItemContent>
+        <Placeholder>
+            @if (SkeletonTemplate is not null)
+            {
+                @SkeletonTemplate
+            }
+            else
+            {
+                <MudSkeleton Height="@($"{ItemSize}px")" />
+            }
+        </Placeholder>
+    </Virtualize>
+}
