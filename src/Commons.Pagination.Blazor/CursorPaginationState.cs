@@ -12,15 +12,19 @@ public sealed class CursorPaginationState<TItem, TParams> : IDisposable
     where TParams : CursorParameters
 {
     private readonly Func<TItem, Guid> _keySelector;
+    private readonly Func<TParams, Guid?, TParams> _withCursor;
     private readonly List<TItem> _cachedItems = [];
     private readonly SemaphoreSlim _fetchLock = new(1, 1);
     private Guid? _lastCursor;
     private bool _hasMoreItems = true;
     private bool _disposed;
 
-    public CursorPaginationState(Func<TItem, Guid> keySelector)
+    public CursorPaginationState(
+        Func<TItem, Guid> keySelector,
+        Func<TParams, Guid?, TParams> withCursor)
     {
         _keySelector = keySelector;
+        _withCursor = withCursor;
     }
 
     public IReadOnlyList<TItem> CachedItems => _cachedItems;
@@ -47,7 +51,7 @@ public sealed class CursorPaginationState<TItem, TParams> : IDisposable
                     break;
 
                 var baseParams = parametersFactory();
-                var parameters = CreateParametersWithCursor(baseParams, _lastCursor);
+                var parameters = _withCursor(baseParams, _lastCursor);
 
                 var fetchedCount = 0;
                 await foreach (var item in fetchAsync(parameters, request.CancellationToken))
@@ -118,44 +122,5 @@ public sealed class CursorPaginationState<TItem, TParams> : IDisposable
             _fetchLock.Dispose();
             _disposed = true;
         }
-    }
-
-    private static TParams CreateParametersWithCursor(TParams baseParams, Guid? cursor)
-    {
-        if (cursor == baseParams.Cursor)
-            return baseParams;
-
-        var type = typeof(TParams);
-        var constructor = type.GetConstructors().FirstOrDefault()
-            ?? throw new InvalidOperationException($"Type {type.Name} must have a public constructor.");
-
-        var parameters = constructor.GetParameters();
-        var args = new object?[parameters.Length];
-
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var param = parameters[i];
-            var prop = type.GetProperty(
-                param.Name!,
-                System.Reflection.BindingFlags.Public
-                    | System.Reflection.BindingFlags.Instance
-                    | System.Reflection.BindingFlags.IgnoreCase
-            );
-
-            if (param.Name?.Equals("cursor", StringComparison.OrdinalIgnoreCase) == true)
-            {
-                args[i] = cursor;
-            }
-            else if (prop is not null)
-            {
-                args[i] = prop.GetValue(baseParams);
-            }
-            else
-            {
-                args[i] = param.HasDefaultValue ? param.DefaultValue : null;
-            }
-        }
-
-        return (TParams)constructor.Invoke(args);
     }
 }
