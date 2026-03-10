@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "Andres Rodriguez",
+  "classifications": ["Library", "Blazor", "Common"],
+  "identity": "Commons.Template",
+  "name": "Commons Libraries",
+  "shortName": "commons",
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "sourceName": "Commons",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Http": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Commons.Http (QueryStringBuilder)"
+    },
+    "Results": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Commons.Results (Result<T> pattern)"
+    },
+    "Pagination": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Commons.Pagination (cursor-based pagination)"
+    },
+    "PaginationBlazor": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Commons.Pagination.Blazor (VirtualizedList)"
+    },
+    "IncludeHttp": {
+      "type": "computed",
+      "value": "(Http || Pagination || PaginationBlazor)"
+    },
+    "IncludePagination": {
+      "type": "computed",
+      "value": "(Pagination || PaginationBlazor)"
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(!IncludeHttp)",
+          "exclude": ["src/Commons.Http/**"]
+        },
+        {
+          "condition": "(!Results)",
+          "exclude": ["src/Commons.Results/**"]
+        },
+        {
+          "condition": "(!IncludePagination)",
+          "exclude": ["src/Commons.Pagination/**"]
+        },
+        {
+          "condition": "(!PaginationBlazor)",
+          "exclude": ["src/Commons.Pagination.Blazor/**"]
+        },
+        {
+          "exclude": [
+            ".template.config/**",
+            "setup.ps1",
+            ".git/**",
+            "*.sln"
+          ]
+        }
+      ]
+    }
+  ],
+  "postActions": []
+}
